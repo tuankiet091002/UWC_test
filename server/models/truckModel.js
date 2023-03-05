@@ -24,7 +24,7 @@ const truckSchema = new mongoose.Schema({
     nextMCP: { type: Number, ref: 'MCP', default: null },
     load: { type: mongoose.Types.Decimal128, default: 0},
     cap: { type: Number, required: true}
-}, {_id: false})
+}, {_id: false, versionKey})
 
 truckSchema.plugin(AutoIncrement, {id: "truck_seq", inc_field: '_id'});
 

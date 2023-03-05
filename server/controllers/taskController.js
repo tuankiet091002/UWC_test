@@ -50,38 +50,36 @@ export const createTask = async (req, res) => {
         collector = await UserModel.findById(collector).select("-username -__v");
         if (!collector) return res.status(404).json({ message: "Collector not found" });
         if (collector.role != "collector") return res.status(400).json({ message: "That is not a collector" });
-        if (!collector.available) return res.status(400).json({ message: "Selected collector is busy" });
-
 
         for (const i in path) {
             path[i] = await MCPModel.findById(path[i]).select("-__v");
             if (!path[i]) return res.status(404).json({ message: `Invalid MCP path(${i}), please check again` })
         }
 
-        truck = await TruckModel.findByIdAndUpdate(truck, { driver: collector, path }, { new: true, runValidators: true }).select("-__v");
+        truck = await TruckModel.findById(truck)
         if (!truck) return res.status(404).json({ message: "Truck not found" });
-        collector = await UserModel.findByIdAndUpdate(collector, { truck: truck }, { new: true, runValidators: true }).select("-password -__v")
-
 
         for (const i in janitor) {
             for (const k in janitor[i]) {
                 janitor[i][k] = await UserModel.findById(janitor[i][k]).select("-password -__v");
-
                 if (!janitor[i][k]) return res.status(404).json({ message: `Janitor[${i}][${k}] not found` });
                 if (janitor[i][k].role != "janitor") return res.status(400).json({ message: `That is not a janitor(janitor[${i}][${k}])` });
-
-                if (janitor[i][k].mcp) return res.status(400).json({ message: `Selected janitor[${i}][${k}] is busy` });
-
-                janitor[i][k] = await UserModel.findByIdAndUpdate(janitor[i][k]._id, { mcp: path[i] }, { new: true, runValidators: true }).select("-password -__v");
-                path[i].janitor.push(janitor[i][k])
             }
-
-            path[i] = await MCPModel.findByIdAndUpdate(path[i]._id, path[i], { new: true, runValidators: true }).select("-__v");
         }
 
         date = new Date(date);
         if (date.getUTCHours() != 17 || date.getUTCMinutes() != 0) return res.status(400).json({ message: "Date must be 0h:00 GMT+7" })
+
         const newTask = await TaskModel.create({ taskmaster: req.user._id, collector, truck: truck._id, janitor, path, date, shift })
+        
+        await UserModel.findByIdAndUpdate(collector._id, { task: [...collector.task, newTask] })
+        await TruckModel.findByIdAndUpdate(truck._id, {driver: collector, path: path})
+        for (const i in janitor) {
+            for (const k in janitor[i]) {
+                await UserModel.findByIdAndUpdate(janitor[i][k]._id, {task: [...janitor[i][k].task, newTask]})
+                await MCPModel.findByIdAndUpdate(path[i]._id, {janitor: [...path[i].janitor, janitor[i][k]]})
+            }
+        } 
 
         res.status(201).json({ message: "Task created", result: newTask })
     } catch (error) {

@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
         }],
         default: null
     },
-})
+}, { versionKey: false })
 
 userSchema.pre('save', async function () {
     const salt = await bcrypt.genSalt(10)

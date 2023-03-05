@@ -1,4 +1,4 @@
-import mongoose, { Mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 import Inc from 'mongoose-sequence';
 
 const AutoIncrement = Inc(mongoose);
@@ -48,7 +48,7 @@ const taskSchema = new mongoose.Schema({
     },
     checkIn: { type: Date, default: null },
     checkOut: { type: Date, default: null }
-}, { _id: false })
+}, { _id: false, versionKey: false })
 
 
 

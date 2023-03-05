@@ -9,7 +9,7 @@ const chatModel = mongoose.Schema({
         default: null,
     },
     groupAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-})
+}, { versionKey: false })
 
 export default mongoose.model("Chat", chatModel);
 
