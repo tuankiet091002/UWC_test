@@ -16,9 +16,6 @@ const User = ({user}) => {
             <td>{user.name}</td>
             <td>{user.role}</td>
             <td>{ user.available ? "Free" : "Working" }</td>
-            <td>{
-            user.role == "janitor" ? `MCP ${user.mcp}` : user.role == "collector" ? `Truck ${user.truck}` : ""
-                }</td>
         </tr>             
     </>)
 };

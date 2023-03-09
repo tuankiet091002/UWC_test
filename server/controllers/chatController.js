@@ -8,7 +8,7 @@ export const getChats = async (req, res) => {
         if (name) query.name = { $regex: name, $options: 'i' }
 
         let chats = await ChatModel.find(query)
-            .populate("users", "-password")
+            .populate("users", "name role available")
             .populate("latestMessage")
             .sort({ updateAt: -1 });
 
@@ -22,12 +22,15 @@ export const getChats = async (req, res) => {
 export const getSingleChat = async (req, res) => {
     const { id } = req.params;
     try {
-        let chat = await ChatModel.findById(id).select("-__v")
-            .populate("users", "-password")
+        let chat = await ChatModel.findById(id)
+            .populate("users", "name role available")
+            .populate("groupAdmin", "name role available")
             .populate("latestMessage");
         if (!chat) return res.status(404).json("Chat not found");
         if (!chat.users.map(x => x._id.toString()).includes(req.user._id.toString())) return res.status(403).json("You are not in this group");
 
+        chat = await UserModel.populate(chat, {path: "lastestMessage.sender", select: "name role available"})
+        
         res.status(200).json({ message: "Chat fetched", result: chat })
     } catch (error) {
         res.status(500).json({ message: "Something went wrong in getSingleChat process" });
@@ -39,15 +42,18 @@ export const createChat = async (req, res) => {
     let { name, users } = req.body
     try {
         for (const i in users) {
-            const user = await UserModel.findById(users[i]).select("-password -__v");
+            const user = await UserModel.findById(users[i]).select("-password");
             if (!user) return res.status(404).json({ message: "User not found" });
         }
 
         users.push(req.user._id)
 
-        const chats = await ChatModel.create({ name, users, groupAdmin: req.user });
+        let chat = await ChatModel.create({ name, users, groupAdmin: req.user });
+        chat = await ChatModel.findById(id)
+            .populate("users", "name role available")
+            .populate("groupAdmin", "name role available")
 
-        res.status(201).json({ message: "Chat created", result: chats });
+        res.status(201).json({ message: "Chat created", result: chat });
     } catch (error) {
         res.status(500).json({ message: "Something went wrong in createChat process" });
         console.log(error)
@@ -63,15 +69,20 @@ export const updateChat = async (req, res) => {
         if (name) chat.name = name;
         if (users) {
             for (const i in users) {
-                const user = await UserModel.findById(users[i]).select("-password -__v");
+                const user = await UserModel.findById(users[i])
                 if (!user) return res.status(404).json({ message: "User not found" });
             }
             users.push(req.user._id);
             chat.users = users;
         }
 
-        chat = await ChatModel.findByIdAndUpdate(id, chat, { new: true, runValidators: true }).populate("users","-password -__v");
-
+        chat = await ChatModel.findByIdAndUpdate(id, chat, { new: true, runValidators: true });
+        chat = await ChatModel.findById(id)
+            .populate("users", "name role available")
+            .populate("groupAdmin", "name role available")
+            .populate("latestMessage");
+        chat = await UserModel.populate(chat, {path: "lastestMessage.sender", select: "name role available"})
+        
         res.status(200).json({ message: "Chat updated", result: chat })
     } catch (error) {
         res.status(500).json({ message: "Something went wrong in updateChat process" });

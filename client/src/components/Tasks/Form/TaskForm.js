@@ -11,7 +11,7 @@ const TaskForm = ({ closeForm }) => {
     const initialState = { collector: '', truck: '', janitor: [], path: [], date: '', shift: '' };
     const dispatch = useDispatch();
     const [form, setForm] = useState(initialState);
-    
+
     const { users } = useSelector(state => state.user)
     let collectors = users.filter(emp => emp.role == "collector")
     const [janitors, setJanitors] = useState(users.filter(emp => emp.role == "janitor"))
@@ -20,7 +20,7 @@ const TaskForm = ({ closeForm }) => {
 
 
     useEffect(() => {
-        dispatch(getUsers({ available: true, mcp: null, truck: null }));
+        dispatch(getUsers({ available: true }));
         dispatch(getTrucks({ path: null }));
         dispatch(getMCPs());
     }, []);
@@ -37,12 +37,20 @@ const TaskForm = ({ closeForm }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log(form)
-        const submitJanitor = form.janitor.map(loc => !loc ? [] : loc.map(jan => jan._id))
-        const submitPath = form.path.map(mcp => mcp._id)
+        let submitPath = structuredClone(form.path)
+        let submitJanitor = structuredClone(form.janitor)
+        for (let i = 0; i < submitPath.length; i++) {
+            if (!submitPath[i]) {
+                submitPath.splice(i, 1)
+                submitJanitor.splice(i, 1)
+                i--;
+            } else {
+                submitJanitor[i] = submitJanitor[i].map(x => x._id)
+                submitPath[i] = submitPath[i]._id
+            }
+        }
         const submitDate = form.date + " GMT+0700"
-        
-        dispatch(createTask({ ...form, janitor: submitJanitor, path: submitPath, date: submitDate }));
+        dispatch(createTask({...form, path: submitPath, janitor: submitJanitor, date: submitDate}));
         clearForm();
         closeForm();
     }
@@ -72,11 +80,10 @@ const TaskForm = ({ closeForm }) => {
                         options={mcps} // Options to display in the dropdown
                         selectedValues={''} // Preselected value to persist in dropdown
                         onSelect={(e, k) => {
-                            setForm({ ...form, path: [...form.path, k] })
+                            setForm({ ...form, path: [...form.path, k], janitor: [...form.janitor, []] })
                         }} // Function will trigger on select event
                         onRemove={(e, k) => {
                             // console.log(prevFormJan)
-                            console.log(form.janitor)
                             let index;
                             for (const i in form.path) {
                                 if (form.path[i]?._id == k._id)
@@ -84,10 +91,9 @@ const TaskForm = ({ closeForm }) => {
                             }
                             var newJan = structuredClone(form.janitor);
                             newJan[index] = []
-                            console.log([...janitors, ...form.janitor[index]])
-                            setJanitors([...janitors, ...form.janitor[index]])
 
-                            setForm({ ...form, path: form.path.map(x => (x && x._id != k._id) ? x : null), janitor: newJan})
+                            setJanitors([...janitors, ...form.janitor[index]])
+                            setForm({ ...form, path: form.path.map(x => (x && x._id != k._id) ? x : null), janitor: newJan })
                         }} // Function will trigger on remove event
                         displayValue="_id" // Property name to display in the dropdown options
                         showCheckbox="true"
@@ -102,7 +108,6 @@ const TaskForm = ({ closeForm }) => {
                                 options={janitors} // Options to display in the dropdown
                                 selectedValues={''} // Preselected value to persist in dropdown
                                 onSelect={(e) => {
-                                    console.log(idx)
                                     for (const i in e) {
                                         setJanitors(janitors.filter(t => t._id != e[i]._id))
                                     }

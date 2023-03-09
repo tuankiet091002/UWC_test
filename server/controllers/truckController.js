@@ -9,7 +9,7 @@ export const getTrucks = async (req, res) => {
 
         if (path === 'null') query.path = null; 
 
-        const trucks = await TruckModel.find(query).select(' -nextMCP -__v');
+        const trucks = await TruckModel.find(query).select('-path -nextMCP').populate("driver", "name role available");
    
         res.status(200).json({ message: "Trucks fetched", result: trucks });
     } catch (error) {
@@ -21,7 +21,7 @@ export const getTrucks = async (req, res) => {
 export const getSingleTruck = async (req, res) => {
     const { id } = req.params
     try {
-        const truck = await TruckModel.findById(id).populate(driver).select('-__v');
+        const truck = await TruckModel.findById(id).populate("driver", "name role available");
         
         if (!truck) return res.status(404).json({ message: "Truck not found" });
 
@@ -51,7 +51,7 @@ export const updateTruck = async (req, res) => {
 	const { id } = req.params
     const { x, y, cap, load } = req.body
     try {
-        const truck = await TruckModel.findById( id );
+        const truck = await TruckModel.findById(id);
         if (!truck) return res.status(404).json({ message: "Truck not found"});
         
         if (x) truck.x = x;
@@ -62,6 +62,7 @@ export const updateTruck = async (req, res) => {
             return res.status(400).json({ message: "Incorrect logic in current load and/or max capacity value" })
     
         const newTruck = await TruckModel.findByIdAndUpdate(id, truck , {new: true , runValidators: true})
+                                        .populate("driver", "name role available");
         
         res.status(200).json({ message: "Truck updated", result: newTruck })
     } catch (error) {
@@ -74,17 +75,11 @@ export const updateTruck = async (req, res) => {
 export const deleteTruck = async (req, res) => {
 	const { id } = req.params
     try {
-        let truck = await TruckModel.findById(id).select("-path -nextMCP -__v")
+        let truck = await TruckModel.findById(id).select("-path -nextMCP")
         if (!truck) return res.status(404).json({ message: "Truck not found" })
         if (truck.nextMCP) return res.status(400).json({ message: "Truck is still running"})
 		
-        truck = await TruckModel.findByIdAndRemove(id).select("-path -nextMCP -__v")
-        
-        if(truck.driver) {
-            const collector = await UserModel.findById(truck.driver)
-            if(!collector.available) return res.status(400).json(`Collector ${collector.name} is still driving the truck`)
-            await UserModel.findByIdAndUpdate(collector._id, {truck: null});
-        }
+        truck = await TruckModel.findByIdAndRemove(id).select("-path -nextMCP")
         
 		res.status(200).json({ message: "Truck removed", result: truck })
 	} catch (error) {

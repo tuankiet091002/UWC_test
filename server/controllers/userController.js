@@ -9,10 +9,8 @@ export const getUsers  = async (req, res) => {
         if (name) query.name = {$regex: name, $options: 'i'}
         if (role) query.role = role
         if (available) query.available = available === 'true'
-        if (mcp) query.mcp = mcp === 'null' ? null : mcp
-        if (truck) query.truck = truck === 'null' ? null : truck
        
-        const users = await UserModel.find(query).select('-password -__v').sort({ role: 1, name: 1});
+        const users = await UserModel.find(query).select('-password -task').sort({ role: 1, name: 1});
         
         res.status(200).json({ message: "Users fetched", result: users });
     } catch (error) {
@@ -24,7 +22,7 @@ export const getUsers  = async (req, res) => {
 export const getSingleUser = async (req, res) => {
     const { id } = req.params
     try {
-        const user = await UserModel.findById(id).select('-password -__v');
+        const user = await UserModel.findById(id).select('-password');
         if (!user) return res.status(404).json({message: "User not found"});
 
         res.status(200).json({ message: "User fetched", result: user})
@@ -38,7 +36,7 @@ export const updateUser = async(req, res) => {
     const { id } = req.params;
     const { name, password } = req.body
     try {
-        const user = await UserModel.findById(id).select('-password -username -__v');
+        const user = await UserModel.findById(id);
         if(!user) return res.status(404).json({ message: "User not found" })
 
         if( req.user.role != "backofficer" && req.user._id != id)

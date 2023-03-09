@@ -16,7 +16,7 @@ const Task = ({ idx, task }) => {
                 {task.collector.name}
             </td>
             <td>
-                {task.truck}
+                {task.truck._id}
             </td>
             <td>
                 {task.path.map(x => x._id).join("->")}

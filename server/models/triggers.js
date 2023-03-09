@@ -17,18 +17,16 @@ exports = async function () {
             const checkinDeadline = new Date(task.date.getTime() + 3600000 * (task.shift * 3 + 3.5));
             const checkoutDeadline = new Date(task.date.getTime() + 3600000 * (task.shift * 3 + 6.5));
 
-            if (!task.checkIn && Date.now() > checkinDeadline.getTime() ||
-                !task.checkOut && Date.now() > checkoutDeadline.getTime()) {
+            if (!task.checkIn && Date.now() > checkinDeadline.getTime()) {
                 task.state = "fail"
-                await userCollection.updateOne({ _id: task.collector }, { $set: { truck: null } })
                 await truckCollection.updateOne({ _id: task.truck }, { $set: { driver: null, path: [] } })
                 for (const k in task.janitor) {
                     for (const l in task.janitor[i]) {
-                        await userCollection.updateOne({ _id: task.janitor[k][l] }, { $set: { mcp: null } })
+                        await userCollection.updateOne({ _id: task.janitor[k][l] }, { $set: { available: true } })
                         task.path[k] = await mcpCollection.findOne({ _id: task.path[k] })
                         task.path[k].janitor.filter((jan) => jan != task.janitor[k][l])
                     }
-                    await MCPModel.updateOne({ _id: task.path[i]._id }, { $set: task.path[i] })
+                    await MCPModel.updateOne({ _id: task.path[k]._id }, { $set: task.path[k] })
                 }
             }
 
