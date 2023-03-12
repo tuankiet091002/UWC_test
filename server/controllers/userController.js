@@ -10,8 +10,8 @@ export const getUsers  = async (req, res) => {
         if (role) query.role = role
         if (available) query.available = available === 'true'
        
-        const users = await UserModel.find(query).select('-password -task').sort({ role: 1, name: 1});
-        
+        const users = await UserModel.find(query).select('-password -task').sort({ role: 1, _id: 1});
+   
         res.status(200).json({ message: "Users fetched", result: users });
     } catch (error) {
         res.status(500).json({ message: "Something went wrong in getUsers process" });

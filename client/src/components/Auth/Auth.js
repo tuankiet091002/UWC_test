@@ -50,7 +50,8 @@ const Auth = () => {
         </div>
         { isSignup && (<div class="form-group">
             <label htmlFor="role">Role</label>
-            <select class="form-control" id="role" name = "role" onChange={handleChange}>
+            <select class="form-control" id="role" name = "role" default="" onChange={handleChange}>
+                <option value=""></option>
                 <option value="janitor">Janitor</option>
                 <option value="collector">Collector</option>
                 <option value="backofficer">Back Officer</option>

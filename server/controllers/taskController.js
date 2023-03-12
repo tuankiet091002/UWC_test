@@ -92,11 +92,12 @@ export const createTask = async (req, res) => {
         const newTask = await TaskModel.create({ taskmaster: req.user._id, collector, truck, janitor, path: [0, ...path, 0], date, shift })
 
         await UserModel.findByIdAndUpdate(collector._id, { task: [...collector.task, newTask] })
-        await TruckModel.findByIdAndUpdate(truck._id, { driver: collector, path: path })
+        await TruckModel.findByIdAndUpdate(truck._id, { driver: collector, path: [0, ...path, 0] })
         for (const i in janitor) {
             for (const k in janitor[i]) {
                 await UserModel.findByIdAndUpdate(janitor[i][k]._id, { task: [...janitor[i][k].task, newTask] })
-                await MCPModel.findByIdAndUpdate(path[i]._id, { janitor: [...path[i].janitor, janitor[i][k]] })
+                const mcp = await MCPModel.findById(path[i]._id)
+                await MCPModel.findByIdAndUpdate(path[i]._id, { janitor: [...mcp.janitor, janitor[i][k]] })
             }
         }
 
@@ -203,17 +204,16 @@ export const checkTask = async (req, res) => {
 
         // thu don neu task fail
         if (task.state == "fail") {
-            await TruckModel.findByIdAndUpdate(task.truck._id, { driver: null, path: null, nextMCP: null })
+            await TruckModel.findByIdAndUpdate(task.truck._id, { driver: null, path: [], nextMCP: null })
 
             let taskPath = []
 
             for (const i in task.janitor) {
-                taskPath.push(task.path[i])
+                taskPath.push(await MCPModel.findById(task.path[Number(i)+1]))
                 for (const k in task.janitor[i]) {
-                    taskPath[i] = taskPath[i].janitor.filter((jan) => jan.toString() != task.janitor[i][k].toString())
+                    taskPath[i].janitor = taskPath[i].janitor.filter((jan) => jan.toString() != task.janitor[i][k].toString())
                 }
-
-                await MCPModel.findByIdAndUpdate(task.path[i]._id, taskPath[i])
+                await MCPModel.findByIdAndUpdate(task.path[Number(i)+1]._id, taskPath[i])
             }
         }
         const newTask = await TaskModel.findByIdAndUpdate(id, task, { new: true, runValidators: true })
@@ -235,19 +235,20 @@ export const deleteTask = async (req, res) => {
         if (task.state != "waiting") return res.status(400).json({ message: "You can only delete waiting task" })
 
         await UserModel.findByIdAndUpdate(task.collector._id, { task: task.collector.task.filter(x => x != task._id) })
-   
-        await TruckModel.findByIdAndUpdate(task.truck, { driver: null, path: null, nextMCP: null })
+
+        await TruckModel.findByIdAndUpdate(task.truck, { driver: null, path: [], nextMCP: null })
 
         let taskPath = []
-
-        for (const i in task.janitor) {
-            taskPath.push(await MCPModel.findById(task.path[i]))
+    
+        for (const i in task.janitor){
+            taskPath.push(await MCPModel.findById(task.path[Number(i)+1]))
             for (const k in task.janitor[i]) {
                 const jan = await UserModel.findById(task.janitor[i][k])
                 await UserModel.findByIdAndUpdate(jan._id, { task: jan.task.filter(x => x != task._id) })
                 taskPath[i].janitor = taskPath[i].janitor.filter((jan) => jan.toString() != jan._id.toString())
             }
-            await MCPModel.findByIdAndUpdate(task.path[i], taskPath[i])
+     
+            await MCPModel.findByIdAndUpdate(task.path[Number(i)+1], taskPath[i])
         }
 
         task = await TaskModel.findByIdAndRemove(id);

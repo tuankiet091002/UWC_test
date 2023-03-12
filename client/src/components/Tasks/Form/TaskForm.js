@@ -21,7 +21,7 @@ const TaskForm = ({ closeForm }) => {
 
     useEffect(() => {
         dispatch(getUsers({ available: true }));
-        dispatch(getTrucks({ path: null }));
+        dispatch(getTrucks({ driver: null }));
         dispatch(getMCPs());
     }, []);
 

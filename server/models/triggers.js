@@ -7,7 +7,7 @@ exports = async function () {
     const db = mongodb.db("test");
     var collection = db.collection("tasks");
     var userCollection = db.collection("users");
-    var mcpCollection = db.collection("mcp");
+    var mcpCollection = db.collection("mcps");
     var truckCollection = db.collection("trucks");
     try {
         const taskList = await collection.find().toArray();
@@ -19,14 +19,16 @@ exports = async function () {
 
             if (!task.checkIn && Date.now() > checkinDeadline.getTime()) {
                 task.state = "fail"
-                await truckCollection.updateOne({ _id: task.truck }, { $set: { driver: null, path: [] } })
+                
+                await truckCollection.updateOne({ _id: task.truck }, { $set: { driver: null, path: [], nextMCP: null} })
+      
+                let taskPath = []
                 for (const k in task.janitor) {
+                    taskPath.push(await mcpCollection.findOne({_id: task.path[Number(k)+1]}))
                     for (const l in task.janitor[i]) {
-                        await userCollection.updateOne({ _id: task.janitor[k][l] }, { $set: { available: true } })
-                        task.path[k] = await mcpCollection.findOne({ _id: task.path[k] })
-                        task.path[k].janitor.filter((jan) => jan != task.janitor[k][l])
+                        taskPath[k].janitor = taskPath[k].janitor.filter((jan) => jan.toString() != task.janitor[k][l].toString())
                     }
-                    await MCPModel.updateOne({ _id: task.path[k]._id }, { $set: task.path[k] })
+                    await mcpCollection.updateOne({ _id: task.path[Number(k)+1] }, { $set: taskPath[k] })
                 }
             }
 
@@ -112,11 +114,10 @@ exports = async function () {
         for (const i in mcpList) {
             const mcp = mcpList[i];
             let speed = 0;
-            for (const i in mcp.janitor) {
-                const janitor = await userCollection.find({ _id: mcp.janitor[i] });
-                if (!janitor.available) speed++;
+            for (const k in mcp.janitor) {
+                const janitor = await userCollection.findOne({ _id: mcp.janitor[k] });
+                if (janitor.available) speed++;
             }
-
             if (mcp.load < mcp.cap) {
                 mcp.load = Math.min(mcp.load + 1 / 6 * speed, mcp.cap)
                 mcpCollection.updateOne({ _id: mcp._id }, { $set: mcp });
@@ -126,5 +127,4 @@ exports = async function () {
         console.log(error)
     }
 };
-
 
