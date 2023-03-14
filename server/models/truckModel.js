@@ -20,7 +20,7 @@ const truckSchema = new mongoose.Schema({
         }],
         default: null
     },
-    // dia diem ke tiep
+    // dia diem ke tiep, nextMCP la index cua path
     nextMCP: { type: Number, ref: 'MCP', default: null },
     load: { type: mongoose.Types.Decimal128, default: 0},
     cap: { type: Number, required: true}

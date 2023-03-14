@@ -3,7 +3,7 @@ import * as api from '../api/index.js';
 export const getTasks = () => async (dispatch) => {
     try {
         const { data } = await api.getTasks();
-        console.log(data)
+
         dispatch({ type: "GET_TASKS", payload: data });
     } catch (error) {
         console.log(error);
@@ -24,7 +24,7 @@ export const getSingleTask = () => async (dispatch) => {
 export const createTask = (form) => async (dispatch) => {
     try {
         const { data } = await api.createTask(form);
-        
+        console.log(data)
         dispatch({ type: "CREATE_TASK", payload: data });
     } catch (error) {
         console.log(error);

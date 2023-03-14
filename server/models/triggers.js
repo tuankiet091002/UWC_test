@@ -40,67 +40,69 @@ exports = async function () {
 };
 
 // Truck Location Manager
-function dToInt(a) {
+function dToInt(a){
     // type nội bộ mongo => type float của js
     return parseFloat(a.toString());
 }
+const SPEED_MODIFIER = 1;
 
-exports = async function () {
+exports =  async function() {
     const mongodb = context.services.get("Cluster");
     const db = mongodb.db("test")
     var truckCollection = db.collection("trucks");
     var mcpCollection = db.collection("mcps");
+    var userCollection = db.collection("users");
     try {
         const truckList = await truckCollection.find().toArray();
-
-        for (const i in truckList) {
+  
+        for (const i in truckList){
             const truck = truckList[i];
-
-            if (truck.nextMCP) {
+            
+            if (truck.nextMCP != null) {
                 const index = (truck.path.map(x => x.toString())).indexOf(truck.nextMCP.toString(), 1)
-
+                  
                 const nextMCP = await mcpCollection.findOne({ _id: truck.nextMCP })
+            
+                const distance = Math.sqrt((nextMCP.x - truck.x)*(nextMCP.x - truck.x) + (nextMCP.y - truck.y)*(nextMCP.y - truck.y));
+                const cos = (nextMCP.x - truck.x)/distance;
+                const sin = (nextMCP.y - truck.y)/distance;
 
-                const distance = Math.sqrt((nextMCP.x - truck.x) * (nextMCP.x - truck.x) + (nextMCP.y - truck.y) * (nextMCP.y - truck.y));
-                const cos = (nextMCP.x - truck.x) / distance;
-                const sin = (nextMCP.y - truck.y) / distance;
-
-                if (distance <= 4) {
+                if (distance <= SPEED_MODIFIER) {
                     // truong hop chua ve noi xuat phat
-                    if (index < truck.path.length - 1) {
+                    if (index < truck.path.length - 1){
                         truck.x = nextMCP.x;
                         truck.y = nextMCP.y;
-                        truck.nextMCP = truck.path[index + 1];
+                        truck.nextMCP = truck.path[index+1];
                         // thay doi load + xoa truck khoi danh sach 
-                        if (nextMCP.load + truck.load < truck.cap) {
-                            truck.load = truck.load + nextMCP.load;
+                  
+                        if ( nextMCP.load + truck.load < truck.cap ){
+                            truck.load = dToInt(truck.load) + nextMCP.load;
                             nextMCP.load = 0;
                         } else {
                             truck.load = truck.cap;
-                            nextMCP.load = nextMCP.load - truck.cap + truck.load;
-                            // bom day thi tro ve tru so
-                            truck.nextMCP = 0;
+                            nextMCP.load = dToInt(nextMCP.load) - truck.cap + truck.load;
                         }
-                        nextMCP.truck = nextMCP.truck.filter(t => t != truck._id)
                     } else {
+                        truck.path = [];
+                        truck.load = 0;
                         truck.x = 0;
                         truck.y = 0;
                         truck.nextMCP = null;
-                        truck.path = [];
                     }
                 } else {
-                    truck.x = dToInt(truck.x) + cos * 4;
-                    truck.y = dToInt(truck.y) + sin * 4;
+                    truck.x = dToInt(truck.x) + cos*SPEED_MODIFIER;
+                    truck.y = dToInt(truck.y) + sin*SPEED_MODIFIER;
                 }
-
-                await truckCollection.updateOne({ _id: truck._id }, { $set: truck });
-                await mcpCollection.updateOne({ _id: nextMCP._id }, { $set: nextMCP });
-            }
+  
+                await truckCollection.updateOne({ _id: truck._id }, {$set: truck});
+                await mcpCollection.updateOne({_id: nextMCP._id}, {$set: nextMCP});
+            } 
         }
-    } catch (error) {
-        console.log(error)
+    } catch(error) {
+          console.log(error)
     }
 };
+
 
 // MCP Load Manager
 exports = async function () {

@@ -48,10 +48,8 @@ export const createChat = async (req, res) => {
 
         users.push(req.user._id)
 
-        let chat = await ChatModel.create({ name, users, groupAdmin: req.user });
-        chat = await ChatModel.findById(id)
-            .populate("users", "name role available")
-            .populate("groupAdmin", "name role available")
+        const chat = await ChatModel.create({ name, users, groupAdmin: req.user });
+        chat.populate("users", "name role available").populate("groupAdmin", "name role available")
 
         res.status(201).json({ message: "Chat created", result: chat });
     } catch (error) {
