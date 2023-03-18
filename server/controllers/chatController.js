@@ -22,15 +22,15 @@ export const getChats = async (req, res) => {
 export const getSingleChat = async (req, res) => {
     const { id } = req.params;
     try {
-        let chat = await ChatModel.findById(id)
+        let chat = await ChatModel.findById(id).sort({ updateAt: -1 })
             .populate("users", "name role available")
             .populate("groupAdmin", "name role available")
             .populate("latestMessage");
         if (!chat) return res.status(404).json("Chat not found");
         if (!chat.users.map(x => x._id.toString()).includes(req.user._id.toString())) return res.status(403).json("You are not in this group");
 
-        chat = await UserModel.populate(chat, {path: "lastestMessage.sender", select: "name role available"})
-        
+        chat = await UserModel.populate(chat, { path: "lastestMessage.sender", select: "name role available" })
+
         res.status(200).json({ message: "Chat fetched", result: chat })
     } catch (error) {
         res.status(500).json({ message: "Something went wrong in getSingleChat process" });
@@ -49,7 +49,8 @@ export const createChat = async (req, res) => {
         users.push(req.user._id)
 
         const chat = await ChatModel.create({ name, users, groupAdmin: req.user });
-        chat.populate("users", "name role available").populate("groupAdmin", "name role available")
+        await chat.populate("users", "name role available")
+        await chat.populate("groupAdmin", "name role available");
 
         res.status(201).json({ message: "Chat created", result: chat });
     } catch (error) {
@@ -79,8 +80,8 @@ export const updateChat = async (req, res) => {
             .populate("users", "name role available")
             .populate("groupAdmin", "name role available")
             .populate("latestMessage");
-        chat = await UserModel.populate(chat, {path: "lastestMessage.sender", select: "name role available"})
-        
+        chat = await UserModel.populate(chat, { path: "lastestMessage.sender", select: "name role available" })
+
         res.status(200).json({ message: "Chat updated", result: chat })
     } catch (error) {
         res.status(500).json({ message: "Something went wrong in updateChat process" });

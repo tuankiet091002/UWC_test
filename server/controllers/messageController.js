@@ -4,7 +4,7 @@ import MessageModel from '../models/messageModel.js';
 export const getMessages = async (req, res) => {
     const { id } = req.params
     try {
-        const chat = await ChatModel.findById(id);
+        const chat = await ChatModel.findById(id).sort({ createdAt: -1 })
         if (!chat) return res.status(404).json({ message: "Chat not found" })
         if (!chat.users.map(x => x._id.toString()).includes(req.user._id.toString())) return res.status(403).json("You are not in this group");
             
@@ -21,7 +21,7 @@ export const sendMessage = async (req, res) =>  {
     const { id } = req.params;
     const { content } = req.body;
     try {
-        let chat = await ChatModel.findById(id).select("-__v");
+        let chat = await ChatModel.findById(id);
         if (!chat) return res.status(404).json({ message: "Chat not found" })
         if (!chat.users.map(x => x._id.toString()).includes(req.user._id.toString())) return res.status(403).json("You are not in this group");
 

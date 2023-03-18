@@ -90,7 +90,7 @@ export const createTask = async (req, res) => {
         }
 
         const newTask = await TaskModel.create({ taskmaster: req.user._id, collector, truck, janitor, path: [0, ...path, 0], date, shift })
-        newTask.populate("path", "-janitor");
+        await newTask.populate("path", "-janitor");
 
         await UserModel.findByIdAndUpdate(collector._id, { task: [...collector.task, newTask] })
         await TruckModel.findByIdAndUpdate(truck._id, { driver: collector, path: [0, ...path, 0] })
@@ -177,7 +177,7 @@ export const checkTask = async (req, res) => {
                 else return res.status(400).json({ message: "Wrong time to check" })
 
                 await UserModel.findByIdAndUpdate(req.user._id, { available: true })
-                await TruckModel.findByIdAndUpdate(task.truck._id, { driver: null })
+                await TruckModel.findByIdAndUpdate(task.truck._id, { driver: null, path:[], nextMCP: null })
             }
             else return res.status(400).json({ message: "Wrong time to check" })
         }

@@ -2,7 +2,7 @@ import MCPModel from '../models/mcpModel.js'
 
 export const getMCPs = async (req, res) => {
     try {
-        const mcps = await MCPModel.find().sort({ _id: 1 }).populate("janitor", "name");
+        const mcps = await MCPModel.find().sort({ _id: 1 }).populate("janitor", "name role available");
    
         res.status(200).json({ message: "MCPs fetched", result: mcps.filter(mcp => mcp._id != 0) })
     } catch (error) {
