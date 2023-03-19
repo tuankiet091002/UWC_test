@@ -37,7 +37,7 @@ mongoose.set('strictQuery', false);
 mongoose.connect(CONNECTION_URL, { useNewUrlParser: true, useUnifiedTopology: true })
 
 
-const server = app.listen(PORT, () => console.log(`Server Running on Port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server running on Port ${PORT}`));
   
 
 const io = new Server(server, {
