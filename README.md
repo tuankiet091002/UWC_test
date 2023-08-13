@@ -1,5 +1,5 @@
 # Urban Waste Collection 2.0 - Test
-Practice Project for (UWC_self)[https://github.com/tuankiet091002/UWC_self/edit/main/README.md]. Keep for educational purposes.
+Practice Project for [UWC_self](https://github.com/tuankiet091002/UWC_self/edit/main/README.md). Keep for educational purposes.
 
 ## Features
 Same
